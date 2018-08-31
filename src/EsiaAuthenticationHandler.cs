@@ -230,6 +230,24 @@ namespace AspNet.Security.OAuth.Esia
             identity.AddClaim(new Claim(EsiaConstants.SbjIdUrn, sbjId));
 
             var uri = new Uri(Options.UserInformationEndpoint + "/" + sbjId);
+            var userInfo = await GetUserInformation(uri, tokens);
+
+            if (Options.FetchContactInfo)
+            {
+                uri = new Uri(Options.UserInformationEndpoint + "/" + sbjId + "/" + EsiaConstants.ContactsUrl);
+                var userContacts = await GetUserInformation(uri, tokens);
+                userInfo.Add(userContacts.Property("elements"));
+            }
+
+            var context = new OAuthCreatingTicketContext(new ClaimsPrincipal(identity), properties, Context, Scheme, Options, Backchannel, tokens, userInfo);
+            context.RunClaimActions();
+
+            await Events.CreatingTicket(context);
+            return new AuthenticationTicket(context.Principal, context.Properties, Scheme.Name);
+        }
+
+        private async Task<JObject> GetUserInformation(Uri uri, OAuthTokenResponse tokens)
+        {
             var request = new HttpRequestMessage(HttpMethod.Get, uri.AbsoluteUri);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -240,12 +258,7 @@ namespace AspNet.Security.OAuth.Esia
                 throw new HttpRequestException($"An error occurred when retrieving Esia user information ({response.StatusCode}). Please check if the authentication information is correct.");
             }
 
-            var payload = JObject.Parse(await response.Content.ReadAsStringAsync());
-            var context = new OAuthCreatingTicketContext(new ClaimsPrincipal(identity), properties, Context, Scheme, Options, Backchannel, tokens, payload);
-            context.RunClaimActions();
-
-            await Events.CreatingTicket(context);
-            return new AuthenticationTicket(context.Principal, context.Properties, Scheme.Name);
+            return JObject.Parse(await response.Content.ReadAsStringAsync());
         }
 
         private static string GetSubjectId(OAuthTokenResponse tokens)

@@ -6,6 +6,8 @@ namespace AspNet.Security.OAuth.Esia
 {
     public static class EsiaConstants
     {
+        internal static readonly string ContactsUrl = "ctts?embed=(elements)";
+
         public static readonly string AuthorizationUrl = "https://esia.gosuslugi.ru/aas/oauth2/ac";
         public static readonly string AccessTokenUrl = "https://esia.gosuslugi.ru/aas/oauth2/te";
         public static readonly string UserInformationUrl = "https://esia.gosuslugi.ru/rs/prns";
