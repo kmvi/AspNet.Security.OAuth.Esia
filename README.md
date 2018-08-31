@@ -8,9 +8,13 @@ services.AddAuthentication().AddEsia(options =>
 {
     options.ClientId = "xxxxxxxxx"; // идентификатор системы-клиента, обязателен
     options.ClientCertificate = new X509Certificate2(...); // сертификат системы-клиента, обязателен
+    
     // по умолчанию используются боевые адреса ЕСИА, можно поменять на тестовые:
     // options.AuthorizationEndpoint = EsiaConstants.TestAuthorizationUrl;
     // options.TokenEndpoint = EsiaConstants.TestAccessTokenUrl;
     // options.UserInformationEndpoint = EsiaConstants.TestUserInformationUrl;
+    
+    // получение контактных данных пользователя (почта, телефон), по умолчанию отключено
+    // options.FetchContactInfo = true;
 });
 ```
