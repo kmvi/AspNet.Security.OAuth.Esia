@@ -1,5 +1,9 @@
 ## Провайдер аутентификации ЕСИА для ASP.NET Core
 
+### Установка
+
+Установите пакет [AspNetCore.Security.OAuth.Esia](https://www.nuget.org/packages/AspNetCore.Security.OAuth.Esia/)
+
 ### Использование
 
 В `Startup.cs` включаем аутентификацию и задаем параметры:
