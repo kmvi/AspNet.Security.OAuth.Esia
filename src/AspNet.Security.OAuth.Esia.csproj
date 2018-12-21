@@ -2,6 +2,17 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>AspNetCore.Security.OAuth.Esia</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>kmvi</Authors>
+    <Company>kmvi</Company>
+    <Title>ESIA authentication provider for ASP.NET Core</Title>
+    <PackageDescription>Провайдер аутентификации ЕСИА для ASP.NET Core</PackageDescription>
+    <Copyright>Copyright © 2018</Copyright>
+    <PackageProjectUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageTags>esia;есиа;oauth2;aspnet-core;oauth2-provider</PackageTags>
+    <RepositoryUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
