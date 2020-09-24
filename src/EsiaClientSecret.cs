@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Authentication;
+using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.Pkcs;
 using System.Text;
@@ -11,7 +12,7 @@ namespace AspNet.Security.OAuth.Esia
         {
             Options = options ?? throw new ArgumentNullException(nameof(options));
 
-            if (Options.ClientCertificate == null)
+            if (Options.ClientCertificateProvider == null)
                 throw new ArgumentException("Client certificate must be provided.");
         }
 
@@ -30,7 +31,7 @@ namespace AspNet.Security.OAuth.Esia
 
             var signMessage = Scope + Timestamp + Options.ClientId + State;
             var encodedSignature = SignMessage(Encoding.UTF8.GetBytes(signMessage));
-            Secret = EsiaHelpers.Base64UrlEncode(encodedSignature);
+            Secret = Base64UrlTextEncoder.Encode(encodedSignature);
 
             return Secret;
         }
@@ -38,7 +39,7 @@ namespace AspNet.Security.OAuth.Esia
         private byte[] SignMessage(byte[] message)
         {
             var signedCms = new SignedCms(new ContentInfo(message), true);
-            var cmsSigner = new CmsSigner(Options.ClientCertificate);
+            var cmsSigner = new CmsSigner(Options.ClientCertificateProvider());
             signedCms.ComputeSignature(cmsSigner);
             return signedCms.Encode();
         }

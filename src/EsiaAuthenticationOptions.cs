@@ -4,10 +4,10 @@ using System.Linq;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.OAuth;
 using Microsoft.AspNetCore.Http;
-using Newtonsoft.Json.Linq;
 
 namespace AspNet.Security.OAuth.Esia
 {
@@ -43,7 +43,7 @@ namespace AspNet.Security.OAuth.Esia
 
         public Guid State { get; } = Guid.NewGuid();
 
-        public X509Certificate2 ClientCertificate { get; set; }
+        public Func<X509Certificate2> ClientCertificateProvider { get; set; }
 
         public bool FetchContactInfo { get; set; } = false;
 
@@ -57,24 +57,32 @@ namespace AspNet.Security.OAuth.Esia
             {
                 // Do nothing
             }
-            catch (Exception)
-            {
-                throw;
-            }
         }
 
-        private static string ParseName(JObject obj)
+        private static string ParseName(JsonElement obj)
         {
-            var lastName = obj["lastName"]?.ToString();
-            var firstName = obj["firstName"]?.ToString();
-            var middleName = obj["middleName"]?.ToString();
+            string lastName = obj.GetString("lastName");
+            string firstName = obj.GetString("firstName");
+            string middleName = obj.GetString("middleName");
+
             return String.Join(" ", new[] { lastName, firstName, middleName }.Where(x => !String.IsNullOrEmpty(x)));
         }
 
-        private static string ParseContactInfo(JObject obj, string key)
+        private static string ParseContactInfo(JsonElement obj, string key)
         {
-            return obj?.Value<JArray>("elements")?
-                .FirstOrDefault(x => x["type"]?.ToString() == key)?["value"]?.ToString();
+            if (obj.ValueKind == JsonValueKind.Object &&
+                obj.TryGetProperty("elements", out var elements) &&
+                elements.ValueKind == JsonValueKind.Array)
+            {
+                JsonElement element = elements.EnumerateArray()
+                    .Where(x => x.GetString("type") == key)
+                    .FirstOrDefault();
+
+                if (element.ValueKind != JsonValueKind.Undefined)
+                    return element.GetString("value");
+            }
+            
+            return null;
         }
     }
 }

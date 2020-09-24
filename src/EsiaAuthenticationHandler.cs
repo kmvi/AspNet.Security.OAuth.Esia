@@ -12,9 +12,11 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json.Linq;
 using System.Globalization;
 using System.Web;
+using System.Text.Json;
+
+using Base64UrlTextEncoder = Microsoft.AspNetCore.Authentication.Base64UrlTextEncoder;
 
 namespace AspNet.Security.OAuth.Esia
 {
@@ -97,7 +99,8 @@ namespace AspNet.Security.OAuth.Esia
                 return HandleRequestResult.Fail("Code was not found.", properties);
             }
 
-            var tokens = await ExchangeCodeAsync(code, BuildRedirectUri(Options.CallbackPath));
+            var context = new OAuthCodeExchangeContext(properties, code, BuildRedirectUri(Options.CallbackPath));
+            var tokens = await ExchangeCodeAsync(context);
 
             if (tokens.Error != null)
             {
@@ -155,7 +158,7 @@ namespace AspNet.Security.OAuth.Esia
             }
         }
 
-        protected override async Task<OAuthTokenResponse> ExchangeCodeAsync(string code, string redirectUri)
+        protected override async Task<OAuthTokenResponse> ExchangeCodeAsync(OAuthCodeExchangeContext context)
         {
             var secret = new EsiaClientSecret(Options);
             Options.ClientSecret = secret.GenerateClientSecret();
@@ -163,14 +166,14 @@ namespace AspNet.Security.OAuth.Esia
             var requestParam = new Dictionary<string, string>
             {
                 { "client_id", Options.ClientId },
-                { "code", code },
+                { "code", context.Code },
                 { "grant_type", "authorization_code" },
                 { "state", secret.State },
                 { "scope", secret.Scope },
                 { "timestamp", secret.Timestamp },
                 { "token_type", "Bearer" },
                 { "client_secret", Options.ClientSecret },
-                { "redirect_uri", redirectUri }
+                { "redirect_uri", context.RedirectUri }
             };
 
             var request = new HttpRequestMessage(HttpMethod.Post, Options.TokenEndpoint);
@@ -180,7 +183,7 @@ namespace AspNet.Security.OAuth.Esia
             var response = await Backchannel.SendAsync(request, Context.RequestAborted);
             if (response.IsSuccessStatusCode)
             {
-                var payload = JObject.Parse(await response.Content.ReadAsStringAsync());
+                var payload = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
                 return OAuthTokenResponse.Success(payload);
             }
             else
@@ -236,17 +239,20 @@ namespace AspNet.Security.OAuth.Esia
             {
                 uri = new Uri(Options.UserInformationEndpoint + "/" + sbjId + "/" + EsiaConstants.ContactsUrl);
                 var userContacts = await GetUserInformation(uri, tokens);
-                userInfo.Add(userContacts.Property("elements"));
+                userInfo["elements"] = userContacts["elements"];
             }
 
-            var context = new OAuthCreatingTicketContext(new ClaimsPrincipal(identity), properties, Context, Scheme, Options, Backchannel, tokens, userInfo);
+            var context = new OAuthCreatingTicketContext(
+                new ClaimsPrincipal(identity), properties, Context,
+                Scheme, Options, Backchannel, tokens, userInfo.ToJsonElement());
+            
             context.RunClaimActions();
 
             await Events.CreatingTicket(context);
             return new AuthenticationTicket(context.Principal, context.Properties, Scheme.Name);
         }
 
-        private async Task<JObject> GetUserInformation(Uri uri, OAuthTokenResponse tokens)
+        private async Task<Dictionary<string, object>> GetUserInformation(Uri uri, OAuthTokenResponse tokens)
         {
             var request = new HttpRequestMessage(HttpMethod.Get, uri.AbsoluteUri);
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", tokens.AccessToken);
@@ -258,15 +264,17 @@ namespace AspNet.Security.OAuth.Esia
                 throw new HttpRequestException($"An error occurred when retrieving Esia user information ({response.StatusCode}). Please check if the authentication information is correct.");
             }
 
-            return JObject.Parse(await response.Content.ReadAsStringAsync());
+            var content = await response.Content.ReadAsStringAsync();
+
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(content);
         }
 
         private static string GetSubjectId(OAuthTokenResponse tokens)
         {
             var payloadString = tokens.AccessToken.Split('.')[1];
-            payloadString = Encoding.UTF8.GetString(EsiaHelpers.Base64Decode(payloadString));
-            var payload = JObject.Parse(payloadString);
-            return payload[EsiaConstants.SbjIdUrn]?.ToString();
+            payloadString = Encoding.UTF8.GetString(Base64UrlTextEncoder.Decode(payloadString));
+            var payload = JsonDocument.Parse(payloadString);
+            return payload.RootElement.GetString(EsiaConstants.SbjIdUrn);
         }
     }
 }
