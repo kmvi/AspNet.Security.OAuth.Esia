@@ -8,9 +8,9 @@
     <Company>kmvi</Company>
     <Title>ESIA authentication provider for ASP.NET Core</Title>
     <PackageDescription>Провайдер аутентификации ЕСИА для ASP.NET Core</PackageDescription>
-    <Copyright>Copyright © 2018</Copyright>
+    <Copyright>Copyright © 2018-2020</Copyright>
     <PackageProjectUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia</PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>esia;есиа;oauth2;aspnet-core;oauth2-provider</PackageTags>
     <RepositoryUrl>https://github.com/kmvi/AspNet.Security.OAuth.Esia</RepositoryUrl>
   </PropertyGroup>
