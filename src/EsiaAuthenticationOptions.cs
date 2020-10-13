@@ -45,6 +45,8 @@ namespace AspNet.Security.OAuth.Esia
 
         public Func<X509Certificate2> ClientCertificateProvider { get; set; }
 
+        public Func<X509Certificate2, byte[], byte[]> SignatureProvider { get; set; }
+
         public bool FetchContactInfo { get; set; } = false;
 
         public override void Validate()

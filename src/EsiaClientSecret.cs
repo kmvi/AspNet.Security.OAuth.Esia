@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.Pkcs;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace AspNet.Security.OAuth.Esia
@@ -38,12 +39,18 @@ namespace AspNet.Security.OAuth.Esia
 
         private byte[] SignMessage(byte[] message)
         {
-            var signedCms = new SignedCms(new ContentInfo(message), true);
-            var cmsSigner = new CmsSigner(Options.ClientCertificateProvider());
-            signedCms.ComputeSignature(cmsSigner);
-            return signedCms.Encode();
+            var provider = Options.SignatureProvider ?? DefaultSignatureProvider;
+            return provider(Options.ClientCertificateProvider(), message);
         }
 
         private static string FormatScope(IEnumerable<string> scopes) => String.Join(" ", scopes);
+
+        private static byte[] DefaultSignatureProvider(X509Certificate2 certificate, byte[] message)
+        {
+            var signedCms = new SignedCms(new ContentInfo(message), true);
+            var cmsSigner = new CmsSigner(certificate);
+            signedCms.ComputeSignature(cmsSigner);
+            return signedCms.Encode();
+        }
     }
 }
